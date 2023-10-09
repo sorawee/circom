@@ -7,6 +7,7 @@ use constraint_writers::ConstraintExporter;
 
 mod constraint_simplification;
 mod json_porting;
+mod info_porting;
 mod non_linear_utils;
 mod r1cs_porting;
 mod state_utils;
@@ -173,6 +174,10 @@ impl ConstraintExporter for ConstraintList {
 
     fn sym(&self, out: &str) -> Result<(), ()> {
         sym_porting::port_sym(self, out)
+    }
+
+    fn info(&self, out: &str) -> Result<(), ()> {
+        info_porting::port_info(self, out)
     }
 }
 

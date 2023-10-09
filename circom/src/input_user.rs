@@ -3,6 +3,7 @@ use std::path::PathBuf;
 pub struct Input {
     pub input_program: PathBuf,
     pub out_r1cs: PathBuf,
+    pub out_info: PathBuf,
     pub out_json_constraints: PathBuf,
     pub out_wat_code: PathBuf,
     pub out_wasm_code: PathBuf,
@@ -19,6 +20,7 @@ pub struct Input {
     pub wat_flag: bool,
     pub r1cs_flag: bool,
     pub sym_flag: bool,
+    pub info_flag: bool,
     pub json_constraint_flag: bool,
     pub json_substitution_flag: bool,
     pub main_inputs_flag: bool,
@@ -36,6 +38,7 @@ pub struct Input {
 
 
 const R1CS: &'static str = "r1cs";
+const INFO: &'static str = "info";
 const WAT: &'static str = "wat";
 const WASM: &'static str = "wasm";
 const CPP: &'static str = "cpp";
@@ -68,6 +71,7 @@ impl Input {
             //field: P_BN128,
             input_program: input,
             out_r1cs: Input::build_output(&output_path, &file_name, R1CS),
+            out_info: Input::build_output(&output_path, &file_name, INFO),
             out_wat_code: Input::build_output(&output_js_path, &file_name, WAT),
             out_wasm_code: Input::build_output(&output_js_path, &file_name, WASM),
 	        out_js_folder: output_js_path.clone(),
@@ -85,6 +89,7 @@ impl Input {
             wat_flag:input_processing::get_wat(&matches),
             wasm_flag: input_processing::get_wasm(&matches),
             c_flag: c_flag,
+            info_flag: input_processing::get_info(&matches),
             r1cs_flag: input_processing::get_r1cs(&matches),
             sym_flag: input_processing::get_sym(&matches),
             main_inputs_flag: input_processing::get_main_inputs_log(&matches),
@@ -128,6 +133,9 @@ impl Input {
     }
     pub fn sym_file(&self) -> &str {
         self.out_sym.to_str().unwrap()
+    }
+    pub fn info_file(&self) -> &str {
+        self.out_info.to_str().unwrap()
     }
     pub fn wat_file(&self) -> &str {
         self.out_wat_code.to_str().unwrap()
@@ -184,6 +192,9 @@ impl Input {
     }
     pub fn sym_flag(&self) -> bool {
         self.sym_flag
+    }
+    pub fn info_flag(&self) -> bool {
+        self.info_flag
     }
     pub fn print_ir_flag(&self) -> bool {
         self.print_ir_flag
@@ -274,6 +285,10 @@ mod input_processing {
 
     pub fn get_r1cs(matches: &ArgMatches) -> bool {
         matches.is_present("print_r1cs")
+    }
+
+    pub fn get_info(matches: &ArgMatches) -> bool {
+        matches.is_present("print_info")
     }
 
     pub fn get_wasm(matches: &ArgMatches) -> bool {
@@ -422,6 +437,13 @@ mod input_processing {
                     .takes_value(false)
                     .display_order(60)
                     .help("Outputs witness in sym format"),
+            )
+            .arg(
+                Arg::with_name("print_info")
+                    .long("info")
+                    .takes_value(false)
+                    .display_order(61)
+                    .help("Outputs the info format"),
             )
             .arg(
                 Arg::with_name("print_r1cs")

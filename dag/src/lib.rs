@@ -3,6 +3,7 @@ mod json_porting;
 mod map_to_constraint_list;
 mod r1cs_porting;
 mod sym_porting;
+mod info_porting;
 mod witness_producer;
 use circom_algebra::num_bigint::BigInt;
 use constraint_list::ConstraintList;
@@ -27,6 +28,8 @@ pub struct Tree<'a> {
     pub signals: Vec<usize>,
     pub forbidden: HashSet<usize>,
     pub id_to_name: HashMap<usize, String>,
+    pub signal_inputs: HashSet<usize>,
+    pub signal_outputs: HashSet<usize>,
     pub constraints: Vec<Constraint>,
 }
 
@@ -43,6 +46,10 @@ impl<'a> Tree<'a> {
         let mut signals: Vec<_> = Vec::new();
         let forbidden: HashSet<_> =
             root.forbidden_if_main.iter().cloned().map(|s| s + offset).collect();
+        let signal_inputs: HashSet<_> =
+            root.inputs.iter().cloned().map(|s| s + offset).collect();
+        let signal_outputs: HashSet<_> =
+            root.outputs.iter().cloned().map(|s| s + offset).collect();
         for (name, id) in root.correspondence() {
             if root.is_local_signal(*id) {
                 Vec::push(&mut signals, *id + offset);
@@ -50,7 +57,7 @@ impl<'a> Tree<'a> {
             }
         }
         signals.sort();
-        Tree { field, dag, path, offset, node_id, signals, forbidden, id_to_name, constraints }
+        Tree { field, dag, path, offset, node_id, signals, forbidden, id_to_name, constraints, signal_inputs, signal_outputs }
     }
 
     pub fn go_to_subtree(current: &'a Tree, edge: &Edge) -> Tree<'a> {
@@ -63,6 +70,10 @@ impl<'a> Tree<'a> {
         let mut id_to_name = HashMap::new();
         let forbidden = HashSet::with_capacity(0);
         let mut signals: Vec<_> = Vec::new();
+        let signal_inputs: HashSet<_> =
+            node.inputs.iter().cloned().map(|s| s + offset).collect();
+        let signal_outputs: HashSet<_> =
+            node.outputs.iter().cloned().map(|s| s + offset).collect();
         for (name, id) in node.correspondence() {
             if node.is_local_signal(*id) {
                 Vec::push(&mut signals, *id + offset);
@@ -76,7 +87,7 @@ impl<'a> Tree<'a> {
             .filter(|c| !c.is_empty())
             .map(|c| Constraint::apply_offset(c, offset))
             .collect();
-        Tree { field, dag, path, offset, node_id, signals, forbidden, id_to_name, constraints }
+        Tree { field, dag, path, offset, node_id, signals, forbidden, id_to_name, constraints, signal_inputs, signal_outputs }
     }
 
     pub fn get_edges(tree: &'a Tree) -> &'a Vec<Edge> {
@@ -145,6 +156,8 @@ pub struct Node {
     signal_correspondence: HashMap<String, Signal>,
     ordered_signals: Vec<String>,
     locals: HashSet<usize>,
+    inputs: HashSet<usize>,
+    outputs: HashSet<usize>,
     reachables: HashSet<usize>, // locals and io of subcomponents
     forbidden_if_main: HashSet<usize>,
     io_signals: Vec<usize>,
@@ -184,6 +197,7 @@ impl Node {
         self.public_inputs_length += if is_public { 1 } else { 0 };
         self.signal_correspondence.insert(name, id);
         self.locals.insert(id);
+        self.inputs.insert(id);
         self.reachables.insert(id);
         self.number_of_signals += 1;
         self.entry.out_number += 1;
@@ -199,6 +213,7 @@ impl Node {
         self.signal_correspondence.insert(name, id);
         self.forbidden_if_main.insert(id);
         self.locals.insert(id);
+        self.outputs.insert(id);
         self.reachables.insert(id);
         self.number_of_signals += 1;
         self.entry.out_number += 1;
@@ -310,6 +325,10 @@ impl ConstraintExporter for DAG {
 
     fn sym(&self, out: &str) -> Result<(), ()> {
         DAG::generate_sym_output(self, out)
+    }
+
+    fn info(&self, out: &str) -> Result<(), ()> {
+        DAG::generate_info_output(self, out)
     }
 }
 
@@ -477,6 +496,10 @@ impl DAG {
 
     pub fn generate_sym_output(&self, output_file: &str) -> Result<(), ()> {
         sym_porting::write(self, output_file)
+    }
+
+    pub fn generate_info_output(&self, output_file: &str) -> Result<(), ()> {
+        info_porting::write(self, output_file)
     }
 
     pub fn generate_json_constraints(&self, debug: &DebugWriter) -> Result<(), ()> {
