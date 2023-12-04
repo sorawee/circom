@@ -1,16 +1,31 @@
 use std::fs::File;
 use std::io::{BufWriter, Write};
 
-pub struct InfoElem {
-    pub original: i64,
-    pub witness: i64,
-    pub node_id: i64,
-    pub status: String,
-    pub symbol: String,
+pub enum InfoEntry {
+    InfoElem {
+        original: i64,
+        witness: i64,
+        node_id: i64,
+        status: String,
+        symbol: String,
+    },
+    InfoHeader {
+        size: usize,
+        node_id: i64,
+        num_inputs: usize,
+        num_outputs: usize,
+        num_internals: usize,
+    },
 }
-impl ToString for InfoElem {
+
+impl ToString for InfoEntry {
     fn to_string(&self) -> String {
-        format!("{},{},{},{},{}", self.original, self.witness, self.node_id, self.status, self.symbol)
+        use InfoEntry::*;
+        match self {
+            InfoElem { original, witness, node_id, status, symbol } =>
+                format!("{},{},{},{},{}", original, witness, node_id, status, symbol),
+            InfoHeader { size, node_id, num_inputs, num_outputs, num_internals } => format!("{},{},{},{},{}", size, node_id,  num_outputs, num_inputs, num_internals)
+        }
     }
 }
 
@@ -25,7 +40,7 @@ impl InfoFile {
         Result::Ok(InfoFile { writer })
     }
 
-    pub fn write_sym_elem(sym: &mut InfoFile, elem: InfoElem) -> Result<(), ()> {
+    pub fn write_sym_elem(sym: &mut InfoFile, elem: InfoEntry) -> Result<(), ()> {
         sym.writer.write_all(elem.to_string().as_bytes()).map_err(|_err| {})?;
         sym.writer.write_all(b"\n").map_err(|_err| {}) //?;
         //sym.writer.flush().map_err(|_err| {})
