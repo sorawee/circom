@@ -1,4 +1,5 @@
-// NOTE We don't care about this file because it is apparently not used?
+// NOTE We don't care about this file because it is not used
+// for optimization level 0.
 // Still, we need to implement it to conform to the interface.
 use super::{ConstraintList, EncodingIterator, IteratorSignal, SignalMap};
 use circom_algebra::num_traits::AsPrimitive;

@@ -23,6 +23,7 @@ pub struct Tree<'a> {
     dag: &'a DAG,
     pub field: BigInt,
     pub path: String,
+    pub name: String,
     pub offset: usize,
     pub node_id: usize,
     pub signals: Vec<usize>,
@@ -41,6 +42,7 @@ impl<'a> Tree<'a> {
         let node_id = dag.main_id();
         let offset = dag.get_entry().unwrap().in_number;
         let path = dag.get_entry().unwrap().label.clone();
+        let name = "main()".to_string();
         let constraints = root.constraints.clone();
         let mut id_to_name = HashMap::new();
         let mut signals: Vec<_> = Vec::new();
@@ -57,7 +59,7 @@ impl<'a> Tree<'a> {
             }
         }
         signals.sort();
-        Tree { field, dag, path, offset, node_id, signals, forbidden, id_to_name, constraints, signal_inputs, signal_outputs }
+        Tree { field, dag, path, name, offset, node_id, signals, forbidden, id_to_name, constraints, signal_inputs, signal_outputs }
     }
 
     pub fn go_to_subtree(current: &'a Tree, edge: &Edge) -> Tree<'a> {
@@ -65,6 +67,7 @@ impl<'a> Tree<'a> {
         let dag = current.dag;
         let node_id = edge.goes_to;
         let node = &current.dag.nodes[node_id];
+        let name = node.template_name.clone();
         let path = format!("{}.{}", current.path, edge.label);
         let offset = current.offset + edge.in_number;
         let mut id_to_name = HashMap::new();
@@ -87,7 +90,7 @@ impl<'a> Tree<'a> {
             .filter(|c| !c.is_empty())
             .map(|c| Constraint::apply_offset(c, offset))
             .collect();
-        Tree { field, dag, path, offset, node_id, signals, forbidden, id_to_name, constraints, signal_inputs, signal_outputs }
+        Tree { field, dag, path, name, offset, node_id, signals, forbidden, id_to_name, constraints, signal_inputs, signal_outputs }
     }
 
     pub fn get_edges(tree: &'a Tree) -> &'a Vec<Edge> {
